@@ -1,0 +1,29 @@
+name: Daily Taiwan Stock Data Update
+
+on:
+  schedule:
+    - cron: '30 8 * * 1-5' # UTC 08:30 = Taiwan 16:30
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Refresh market snapshot
+        run: python auto_update.py
+      - name: Commit daily snapshot
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/daily_snapshot.csv
+          git diff --cached --quiet || git commit -m "chore: daily market snapshot"
+          git push
